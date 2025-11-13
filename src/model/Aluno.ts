@@ -1,79 +1,228 @@
-class Aluno{
+import type { AlunoDTO } from "../interface/AlunoDTO.js";
+import { DatabaseModel } from "./DatabaseModel.js"; 
+
+
+const database = new DatabaseModel().pool; 
+
+
+class Aluno {
+
+ 
+    private idAluno: number = 0;
     private nome: string;
-    private sobrenome: string; 
-    private ra: number;
-    private dataNascimento:Date;
+    private sobrenome: string;
+    private ra: number; 
+    private dataNascimento: Date;
+    private celular: string;
     private email:string;  
     private endereco: string; 
-    private celular:number; 
 
 
+
+    /**
+     * Construtor da classe Aluno
+     * @param _nome Nome do Aluno
+     * @param _cpf CPF do Aluno
+     * @param _celular Telefone do Aluno
+     * @param _email Email do Aluno
+     * @param _endereco Endereco do Aluno
+     */
     constructor(
         _nome: string,
         _sobrenome: string,
-        _ra:number, 
-        _dataNascimento:Date, 
-        _email: string, 
-        _endereco: string, 
-        _celular:number, 
-    
-    ){
+        _ra: number, 
+        _dataNascimento: Date,
+        _celular: string,
+        _email:string,
+        _endereco: string
+
+
+    ) {
         this.nome = _nome;
         this.sobrenome = _sobrenome;
-        this.ra= _ra;
+        this.ra = _ra;
         this.dataNascimento = _dataNascimento;
-        this.email= _email;
-        this.endereco= _endereco; 
-        this.celular= _celular;
-        
+        this.celular = _celular;
+        this.email = _email;
+        this.endereco = _endereco;
     }
 
-    public getNome():string{
+    
+    public getIdAluno(): number {
+        return this.idAluno;
+    }
+
+   
+    public setIdAluno(idAluno: number): void {
+        this.idAluno = idAluno;
+    }
+
+    public getNome(): string {
         return this.nome;
     }
 
-    public setNome(_nome: string): void{
-        this.nome = _nome; 
+    public setNome(nome: string): void {
+        this.nome = nome;
     }
-
-    public getSobrenome(): string{
+   
+    public getSobrenome(): string {
         return this.sobrenome;
     }
-    public setSobrenome(_sobrenome: string): void{
-       this.sobrenome = _sobrenome;
+
+   
+    public setSobrenome(sobrenome: string): void {
+        this.sobrenome = sobrenome;
     }
-    public getRa(): number{
-        return this.ra; 
+
+    public getra(): number {
+        return this.ra;
     }
-    public setRa(_ra:number): void{
-        this.ra = _ra; 
+
+    public setra(ra: number): number {
+         return this.ra = ra;
     }
-    public getdataNascimento(): Date{
+
+ 
+    public getdataNascimento(): Date {
         return this.dataNascimento;
     }
-    public setdataNascimento(_dataNascimento: Date): void{
-          this.dataNascimento = _dataNascimento; 
-    }
-    public getemail():string{
-        return this.email; 
-    }
-    public setemail(_email:string): void{
-        this.email = _email; 
-    }
-    public getendereco():string{
-        return this.endereco 
-    }
-    public setendereco(_endereco:string): void{
-        this.endereco = _endereco; 
-    }
-    public getcelular(): number{
-        return this.celular
-    }
-    public setcelular(_celular:number): void{
-        this.celular = _celular
+
+    public setdataNascimento(dataNascimento: Date): void {
+        this.dataNascimento = dataNascimento;
     }
     
+    public getemail(): string {
+        return this.email;
+    }
 
+    public setemail(email: string): void {
+        this.email = email;
+    }
+
+    public getendereco(): string {
+        return this.endereco;
+    }
+
+
+    public setendereco(endereco: string): void {
+        this.endereco = endereco;
+    }
+    
+    public getcelular(): string {
+        return this.celular;
+    }
+
+    public setcelular(celular: string): void {
+        this.celular = celular;
+    }
+
+    static async listarAlunos(): Promise<Array<Aluno> | null> {
+        try {
+           
+            let listaDeAlunos: Array<Aluno> = [];
+
+          
+            const querySelectAlunos = `SELECT * FROM Alunos;`;
+
+
+            const respostaBD = await database.query(querySelectAlunos);
+
+            
+            respostaBD.rows.forEach((AlunoBD) => {
+               
+                const novoAluno: Aluno = new Aluno(
+                    AlunoBD.nome,
+                    AlunoBD.sobrenome,
+                    AlunoBD.ra,
+                    AlunoBD.dataNascimento,
+                    AlunoBD.email, 
+                    AlunoBD.endereco, 
+                    AlunoBD.celular, 
+                );
+
+                
+                novoAluno.setIdAluno(AlunoBD.id_Aluno);
+
+                
+                listaDeAlunos.push(novoAluno);
+            });
+
+          
+            return listaDeAlunos;
+        } catch (error) {
+         
+            console.error(`Erro na consulta ao banco de dados. ${error}`);
+
+            
+            return null;
+        }
+    }
+
+    static async cadastrarAluno(Aluno: AlunoDTO): Promise<boolean> {
+        try {
+            
+            const queryInsertAluno = `INSERT INTO Alunos (nome, cpf, telefone)
+                                VALUES
+                                ($1, $2, $3)
+                                RETURNING id_Aluno;`;
+
+            
+            const respostaBD = await database.query(queryInsertAluno, [
+                Aluno.sobrenome.toUpperCase(), 
+                Aluno.ra,             
+                Aluno.celular,   
+                Aluno.dataNascimento, 
+                Aluno.email, 
+                Aluno.endereco
+            ]);
+
+           
+            if (respostaBD.rows.length > 0) {
+              
+                console.info(`Aluno cadastrado com sucesso. ID: ${respostaBD.rows[0].id_Aluno}`);
+
+               
+                return true;
+            }
+
+          
+            return false;
+        } catch (error) {
+         
+            console.error(`Erro na consulta ao banco de dados. ${error}`);
+
+            return false;
+        }
+    }
+    
+    static async listarAluno(idAluno: number):Promise<Aluno|null> {
+        try {
+            const querySelectAluno = `SELECT * FROM Alunos WHERE id_Aluno=$1;`;
+
+            const respostaBD = await database.query(querySelectAluno, [idAluno]);
+
+            if (respostaBD.rowCount !== 0) {
+                const aluno: Aluno = new Aluno(
+                    respostaBD.rows[0].nome,
+                    respostaBD.rows[0].sobrenome,
+                    respostaBD.rows[0].ra,
+                    respostaBD.rows[0].dataNascimento,
+                    respostaBD.rows[0].celular,
+                    respostaBD.rows[0].email,
+                    respostaBD.rows[0].endereco
+                );
+                aluno.setIdAluno(respostaBD.rows[0].id_Aluno);
+
+                return aluno;
+            }
+
+            return null;
+        } catch (error) {
+            console.error(`Erro ao buscar Aluno no banco de dados. ${error}`);
+            return null;
+        }
+    }
+    
 }
 
-export default Aluno; 
+export default Aluno;
